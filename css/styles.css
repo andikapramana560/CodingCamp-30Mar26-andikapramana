@@ -138,6 +138,7 @@ header h1 {
   cursor: pointer;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
+  white-space: nowrap;
 }
 
 .btn-theme-toggle:hover {
@@ -400,8 +401,23 @@ main {
     padding: 20px;
   }
 
+  /* Keep theme toggle in top-right but make it smaller */
+  .theme-toggle {
+    top: 15px;
+    right: 15px;
+  }
+
+  .btn-theme-toggle {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+  }
+
   header h1 {
     font-size: 1.5rem;
+  }
+
+  .balance-display {
+    font-size: 1.3rem;
   }
 
   .balance-amount {
@@ -426,16 +442,33 @@ main {
 }
 
 @media (max-width: 480px) {
+  header {
+    padding: 15px;
+  }
+
+  .theme-toggle {
+    top: 12px;
+    right: 12px;
+  }
+
+  .btn-theme-toggle {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
   header h1 {
     font-size: 1.3rem;
+    padding-top: 40px;
   }
 
   .balance-display {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
   }
 
   .balance-amount {
     font-size: 1.3rem;
+    display: block;
+    margin-top: 5px;
   }
 
   .transaction-list {
