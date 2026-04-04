@@ -9,10 +9,15 @@ The Expense & Budget Visualizer is a minimal client-side web application that en
 - **Application**: The Expense & Budget Visualizer web application
 - **User**: A person using the Application to track expenses
 - **Transaction**: A spending record containing item name, amount, and category
-- **Category**: A fixed classification label for transactions (Food, Transport, Fun)
+- **Category**: A classification label for transactions (default: Food, Transport, Fun; user-defined custom categories also allowed)
+- **Custom_Category**: A user-defined category label created and managed by the User
+- **Default_Category**: A pre-defined category label (Food, Transport, Fun) that cannot be deleted
 - **Local_Storage**: The browser's Local Storage API used for client-side data persistence
 - **Balance**: The total sum of all transaction amounts
 - **Chart**: A pie chart visualization showing spending distribution by category
+- **Theme**: The visual appearance mode of the Application (Dark Mode or Light Mode)
+- **Dark_Mode**: A color scheme with dark backgrounds and light text
+- **Light_Mode**: A color scheme with light backgrounds and dark text
 
 ## Requirements
 
@@ -114,20 +119,72 @@ The Expense & Budget Visualizer is a minimal client-side web application that en
 3. THE Application SHALL contain an HTML file in the root directory
 4. THE Application SHALL organize code with clear separation of concerns (structure, style, behavior)
 
+### Requirement 9: Custom Categories
+
+**User Story:** As a User, I want to create and manage custom categories, so that I can organize my transactions according to my personal spending patterns.
+
+#### Acceptance Criteria
+
+1. THE Application SHALL allow the User to add custom categories in addition to the Default_Categories
+2. WHEN the User creates a Custom_Category, THE Application SHALL save it to Local_Storage
+3. THE Application SHALL display both Default_Categories and Custom_Categories in the category dropdown
+4. THE Application SHALL provide a category management interface where the User can view all categories
+5. WHEN the User deletes a Custom_Category, THE Application SHALL remove it from Local_Storage
+6. THE Application SHALL prevent deletion of Default_Categories (Food, Transport, Fun)
+7. IF the User attempts to create a Custom_Category with a name that already exists, THEN THE Application SHALL display an error message
+8. WHEN the User deletes a Custom_Category that has associated transactions, THE Application SHALL reassign those transactions to a default category or prompt the User for action
+
+### Requirement 10: Transaction Sorting
+
+**User Story:** As a User, I want to sort my transactions by amount or category, so that I can analyze my spending patterns more easily.
+
+#### Acceptance Criteria
+
+1. THE Application SHALL provide a sorting control for the transaction list
+2. WHEN the User selects sort by amount ascending, THE Application SHALL display transactions ordered from lowest to highest amount
+3. WHEN the User selects sort by amount descending, THE Application SHALL display transactions ordered from highest to lowest amount
+4. WHEN the User selects sort by category, THE Application SHALL display transactions ordered alphabetically by category name
+5. THE Application SHALL update the transaction list display immediately when sorting is applied
+6. THE Application SHALL maintain the current sort order when new transactions are added
+7. THE Application SHALL provide a visual indicator showing the current sort order
+
+### Requirement 11: Dark and Light Mode Toggle
+
+**User Story:** As a User, I want to switch between dark mode and light mode, so that I can use the application comfortably in different lighting conditions.
+
+#### Acceptance Criteria
+
+1. THE Application SHALL provide a toggle control for switching between Dark_Mode and Light_Mode
+2. WHEN the User activates Dark_Mode, THE Application SHALL apply a dark color scheme to all UI elements
+3. WHEN the User activates Light_Mode, THE Application SHALL apply a light color scheme to all UI elements
+4. WHEN the User changes the Theme, THE Application SHALL save the preference to Local_Storage
+5. WHEN the Application starts, THE Application SHALL load the saved Theme preference from Local_Storage
+6. IF no Theme preference exists in Local_Storage, THEN THE Application SHALL default to Light_Mode
+7. THE Application SHALL ensure sufficient contrast in both themes for accessibility
+8. THE Application SHALL position the theme toggle control in a prominent and easily accessible location
+
 ---
 
 ## Review Notes
 
-This requirements document defines a simplified MVP Expense Tracker application focused on core functionality:
+This requirements document defines an Expense Tracker application with core functionality and enhanced user experience features:
+
+**Core MVP Features:**
 
 - Input form with three fields (Item Name, Amount, Category)
-- Fixed categories (Food, Transport, Fun)
+- Default categories (Food, Transport, Fun)
 - Scrollable transaction list with delete capability
 - Total balance display that updates automatically
 - Pie chart visualization of spending by category
 - Local Storage persistence
 - Simple file structure (1 HTML, 1 CSS, 1 JS)
 
-The requirements follow EARS patterns and INCOSE quality rules, ensuring they are clear, testable, and complete. This MVP scope removes complex features like budgets, custom categories, date filtering, and import/export to focus on the essential expense tracking experience.
+**Enhanced Features:**
 
-Please review these simplified requirements and let me know if you'd like any modifications.
+- Custom category management (add/delete user-defined categories)
+- Transaction sorting (by amount ascending/descending, by category alphabetically)
+- Dark/Light mode toggle with persistence
+
+The requirements follow EARS patterns and INCOSE quality rules, ensuring they are clear, testable, and complete. All features maintain the simplicity of the client-side architecture while providing users with greater flexibility and personalization options.
+
+Please review these updated requirements and let me know if you'd like any modifications.

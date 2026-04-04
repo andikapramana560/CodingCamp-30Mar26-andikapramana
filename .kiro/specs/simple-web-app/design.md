@@ -36,6 +36,8 @@ graph TD
 
 - Handles all Local Storage interactions
 - Provides CRUD operations for transactions
+- Manages custom category persistence
+- Stores and retrieves theme preferences
 - Manages serialization/deserialization
 - Handles storage availability checks
 
@@ -44,20 +46,40 @@ graph TD
 - Defines transaction data structure
 - Validates transaction input
 - Calculates totals and category aggregations
+- Handles transaction sorting (by amount, by category)
+
+**Category Module** (`category.js` functionality within `app.js`)
+
+- Manages default and custom categories
+- Validates category names (uniqueness, non-empty)
+- Handles custom category creation and deletion
+- Manages transaction reassignment when categories are deleted
+- Provides category list for dropdown population
 
 **UI Module** (`ui.js` functionality within `app.js`)
 
 - Manages DOM manipulation
 - Handles form submission and validation
-- Renders transaction list
+- Renders transaction list with current sort order
 - Updates balance display
 - Manages user interactions
+- Renders category management interface
+- Handles sort control interactions
+- Manages theme toggle control
 
 **Chart Module** (`chart.js` functionality within `app.js`)
 
 - Initializes Chart.js instance
 - Updates chart data on transaction changes
 - Handles empty state visualization
+- Adapts chart colors based on current theme
+
+**Theme Module** (`theme.js` functionality within `app.js`)
+
+- Manages dark/light mode state
+- Applies theme-specific CSS classes
+- Persists theme preference to Local Storage
+- Loads theme preference on startup
 
 Since the requirement specifies a single JavaScript file, all modules will be organized as separate sections within `js/app.js` with clear comments delineating boundaries.
 
@@ -70,7 +92,7 @@ Since the requirement specifies a single JavaScript file, all modules will be or
   id: string,          // Unique identifier (timestamp-based)
   itemName: string,    // Name of the expense item
   amount: number,      // Positive number representing cost
-  category: string     // One of: "Food", "Transport", "Fun"
+  category: string     // One of default categories or custom category name
 }
 ```
 
@@ -82,6 +104,18 @@ function loadTransactions(): Transaction[]
 
 // Save all transactions to Local Storage
 function saveTransactions(transactions: Transaction[]): void
+
+// Load custom categories from Local Storage
+function loadCustomCategories(): string[]
+
+// Save custom categories to Local Storage
+function saveCustomCategories(categories: string[]): void
+
+// Load theme preference from Local Storage
+function loadThemePreference(): string | null
+
+// Save theme preference to Local Storage
+function saveThemePreference(theme: string): void
 
 // Check if Local Storage is available
 function isStorageAvailable(): boolean
@@ -101,6 +135,37 @@ function calculateCategoryTotals(transactions: Transaction[]): { [category: stri
 
 // Validate transaction input
 function validateTransactionInput(itemName: string, amount: string, category: string): { valid: boolean, error?: string }
+
+// Sort transactions by amount (ascending or descending)
+function sortByAmount(transactions: Transaction[], ascending: boolean): Transaction[]
+
+// Sort transactions by category (alphabetically)
+function sortByCategory(transactions: Transaction[]): Transaction[]
+
+// Apply current sort order to transaction list
+function applySortOrder(transactions: Transaction[], sortMode: string): Transaction[]
+```
+
+### Category Interface
+
+```javascript
+// Get all categories (default + custom)
+function getAllCategories(): string[]
+
+// Add a new custom category
+function addCustomCategory(categoryName: string): { success: boolean, error?: string }
+
+// Delete a custom category
+function deleteCustomCategory(categoryName: string): { success: boolean, error?: string }
+
+// Check if a category is a default category
+function isDefaultCategory(categoryName: string): boolean
+
+// Validate category name (non-empty, unique)
+function validateCategoryName(categoryName: string): { valid: boolean, error?: string }
+
+// Reassign transactions from deleted category
+function reassignTransactions(transactions: Transaction[], deletedCategory: string, newCategory: string): Transaction[]
 ```
 
 ### UI Interface
@@ -109,7 +174,7 @@ function validateTransactionInput(itemName: string, amount: string, category: st
 // Initialize the application
 function init(): void
 
-// Render the transaction list
+// Render the transaction list with current sort order
 function renderTransactions(transactions: Transaction[]): void
 
 // Update the balance display
@@ -126,6 +191,46 @@ function showError(message: string): void
 
 // Clear form fields
 function clearForm(): void
+
+// Render category management interface
+function renderCategoryManagement(): void
+
+// Handle custom category addition
+function handleAddCategory(categoryName: string): void
+
+// Handle custom category deletion
+function handleDeleteCategory(categoryName: string): void
+
+// Update category dropdown with all categories
+function updateCategoryDropdown(): void
+
+// Handle sort control change
+function handleSortChange(sortMode: string): void
+
+// Update sort indicator in UI
+function updateSortIndicator(sortMode: string): void
+
+// Handle theme toggle
+function handleThemeToggle(): void
+
+// Apply theme to UI elements
+function applyTheme(theme: string): void
+```
+
+### Theme Interface
+
+```javascript
+// Get current theme
+function getCurrentTheme(): string
+
+// Set theme (dark or light)
+function setTheme(theme: string): void
+
+// Toggle between dark and light mode
+function toggleTheme(): void
+
+// Load theme preference on startup
+function initializeTheme(): void
 ```
 
 ### Chart Interface
@@ -136,6 +241,9 @@ function initChart(): Chart
 
 // Update chart with new data
 function updateChart(categoryTotals: { [category: string]: number }): void
+
+// Update chart colors based on current theme
+function updateChartTheme(theme: string): void
 ```
 
 ## Data Models
@@ -160,7 +268,7 @@ class Transaction {
 - `id`: Must be unique across all transactions
 - `itemName`: Non-empty string after trimming whitespace
 - `amount`: Positive number (> 0)
-- `category`: Must be one of ["Food", "Transport", "Fun"]
+- `category`: Must be one of default categories ["Food", "Transport", "Fun"] or a valid custom category
 
 ### Application State
 
@@ -168,6 +276,9 @@ The application maintains a single source of truth in memory:
 
 ```javascript
 let transactions = []; // Array of Transaction objects
+let customCategories = []; // Array of custom category names
+let currentSortMode = "none"; // Current sort mode: 'none', 'amount-asc', 'amount-desc', 'category'
+let currentTheme = "light"; // Current theme: 'light' or 'dark'
 let chartInstance = null; // Chart.js instance
 ```
 
@@ -194,15 +305,55 @@ Transactions are stored in Local Storage as a JSON array under the key `"transac
 ]
 ```
 
-### Category Configuration
+Custom categories are stored as a JSON array under the key `"customCategories"`:
 
-Categories are hardcoded as a constant array:
-
-```javascript
-const CATEGORIES = ["Food", "Transport", "Fun"];
+```json
+["Entertainment", "Healthcare", "Education"]
 ```
 
-This ensures consistency across the application and simplifies validation.
+Theme preference is stored as a string under the key `"theme"`:
+
+```json
+"dark"
+```
+
+### Category Configuration
+
+Default categories are hardcoded as a constant array:
+
+```javascript
+const DEFAULT_CATEGORIES = ["Food", "Transport", "Fun"];
+```
+
+Custom categories are loaded from Local Storage and combined with default categories for display. This ensures consistency while allowing user customization.
+
+### Sort State
+
+The application maintains the current sort mode and applies it consistently:
+
+```javascript
+const SORT_MODES = {
+  NONE: "none",
+  AMOUNT_ASC: "amount-asc",
+  AMOUNT_DESC: "amount-desc",
+  CATEGORY: "category",
+};
+```
+
+When a new transaction is added, it's inserted according to the current sort mode to maintain order.
+
+### Theme State
+
+The application supports two themes with corresponding CSS classes:
+
+```javascript
+const THEMES = {
+  LIGHT: "light",
+  DARK: "dark",
+};
+```
+
+Theme is applied by adding/removing a class on the document body element, triggering CSS variable changes for colors throughout the application.
 
 ### Chart Interface
 
@@ -219,12 +370,13 @@ function updateChart(categoryTotals: { [category: string]: number }): void
 **Adding a Transaction:**
 
 1. User fills form and submits
-2. Validate input (all fields non-empty, amount positive)
+2. Validate input (all fields non-empty, amount positive, category valid)
 3. Create transaction object with unique ID
 4. Add to in-memory transactions array
-5. Save to Local Storage
-6. Update UI (list, balance, chart)
-7. Clear form fields
+5. Apply current sort order to maintain list ordering
+6. Save to Local Storage
+7. Update UI (list, balance, chart)
+8. Clear form fields
 
 **Deleting a Transaction:**
 
@@ -233,13 +385,53 @@ function updateChart(categoryTotals: { [category: string]: number }): void
 3. Update Local Storage
 4. Update UI (list, balance, chart)
 
+**Adding a Custom Category:**
+
+1. User enters category name in management interface
+2. Validate category name (non-empty, unique)
+3. Add to in-memory customCategories array
+4. Save to Local Storage
+5. Update category dropdown
+6. Clear category input field
+
+**Deleting a Custom Category:**
+
+1. User clicks delete button on custom category
+2. Check if category is default (prevent deletion if so)
+3. Check for transactions using this category
+4. If transactions exist, prompt user to select reassignment category
+5. Reassign transactions to selected category
+6. Remove category from in-memory array
+7. Update Local Storage (categories and transactions)
+8. Update UI (dropdown, transaction list, chart)
+
+**Sorting Transactions:**
+
+1. User selects sort mode from control
+2. Update currentSortMode state
+3. Apply sort to transactions array
+4. Re-render transaction list
+5. Update sort indicator in UI
+
+**Toggling Theme:**
+
+1. User clicks theme toggle button
+2. Determine new theme (opposite of current)
+3. Update currentTheme state
+4. Apply theme CSS class to body
+5. Update chart colors if needed
+6. Save theme preference to Local Storage
+
 **Application Initialization:**
 
 1. Check Local Storage availability
 2. Load transactions from Local Storage
-3. Initialize Chart.js instance
-4. Render initial UI state
-5. Attach event listeners
+3. Load custom categories from Local Storage
+4. Load theme preference from Local Storage (default to light if none)
+5. Apply theme to UI
+6. Initialize Chart.js instance with theme colors
+7. Render initial UI state (transactions, balance, chart, categories)
+8. Attach event listeners
 
 ## Correctness Properties
 
@@ -347,6 +539,84 @@ _For any_ set of transactions stored in Local Storage, when the application init
 
 **Validates: Requirements 6.1**
 
+### Property 18: Custom category addition
+
+_For any_ valid category name (non-empty, unique), adding it as a custom category should result in that category appearing in the category dropdown.
+
+**Validates: Requirements 9.1, 9.3**
+
+### Property 19: Custom category persistence round-trip
+
+_For any_ custom category, after adding it to the application and reloading the page, the category should be loaded from Local Storage and appear in the category dropdown.
+
+**Validates: Requirements 9.2**
+
+### Property 20: Custom category deletion from storage
+
+_For any_ custom category, after deleting it from the application and reloading the page, the category should not be present in the loaded category list.
+
+**Validates: Requirements 9.5**
+
+### Property 21: Default category deletion prevention
+
+_For any_ default category (Food, Transport, Fun), attempting to delete it should be rejected and the category should remain in the category list.
+
+**Validates: Requirements 9.6**
+
+### Property 22: Duplicate category name rejection
+
+_For any_ existing category name (default or custom), attempting to create a new category with that exact name should be rejected with an error message.
+
+**Validates: Requirements 9.7**
+
+### Property 23: Transaction reassignment on category deletion
+
+_For any_ custom category with associated transactions, deleting that category should result in all those transactions being reassigned to a valid category (either user-selected or default).
+
+**Validates: Requirements 9.8**
+
+### Property 24: Sort by amount ascending order
+
+_For any_ list of transactions, when sorted by amount ascending, each transaction's amount should be less than or equal to the next transaction's amount.
+
+**Validates: Requirements 10.2**
+
+### Property 25: Sort by amount descending order
+
+_For any_ list of transactions, when sorted by amount descending, each transaction's amount should be greater than or equal to the next transaction's amount.
+
+**Validates: Requirements 10.3**
+
+### Property 26: Sort by category alphabetical order
+
+_For any_ list of transactions, when sorted by category, the categories should appear in alphabetical order (comparing adjacent transactions).
+
+**Validates: Requirements 10.4**
+
+### Property 27: Sort order maintenance on addition
+
+_For any_ sorted transaction list with a given sort mode, adding a new transaction should result in the list maintaining the sort order (new transaction inserted in correct position).
+
+**Validates: Requirements 10.6**
+
+### Property 28: Sort indicator visibility
+
+_For any_ active sort mode (not 'none'), the rendered UI should contain a visual indicator showing which sort mode is currently active.
+
+**Validates: Requirements 10.7**
+
+### Property 29: Theme application
+
+_For any_ theme (dark or light), activating that theme should apply the corresponding CSS class or attribute to the document body element.
+
+**Validates: Requirements 11.2, 11.3**
+
+### Property 30: Theme preference persistence round-trip
+
+_For any_ theme preference (dark or light), after setting it and reloading the application, the same theme should be applied on startup.
+
+**Validates: Requirements 11.4, 11.5**
+
 ## Error Handling
 
 ### Input Validation Errors
@@ -364,6 +634,61 @@ _For any_ set of transactions stored in Local Storage, when the application init
 - Response: Display error message "Amount must be a positive number"
 - State: Form remains populated with entered values
 - Recovery: User corrects amount and resubmits
+
+**Invalid Category:**
+
+- Trigger: User selects a category that no longer exists (edge case after deletion)
+- Response: Display error message "Selected category is invalid"
+- State: Form remains populated, category reset to first valid option
+- Recovery: User selects valid category and resubmits
+
+### Category Management Errors
+
+**Duplicate Category Name:**
+
+- Trigger: User attempts to create a category with a name that already exists
+- Response: Display error message "Category already exists"
+- State: Category input remains populated
+- Recovery: User enters a different name
+
+**Empty Category Name:**
+
+- Trigger: User attempts to create a category with empty or whitespace-only name
+- Response: Display error message "Category name cannot be empty"
+- State: Category input cleared
+- Recovery: User enters valid name
+
+**Default Category Deletion Attempt:**
+
+- Trigger: User attempts to delete a default category (Food, Transport, Fun)
+- Response: Display error message "Cannot delete default categories"
+- State: Category remains in list
+- Recovery: None needed, operation prevented
+
+**Category Deletion with Transactions:**
+
+- Trigger: User attempts to delete a custom category that has associated transactions
+- Response: Display prompt asking user to select reassignment category
+- State: Deletion paused pending user selection
+- Recovery: User selects target category, transactions reassigned, then category deleted
+
+### Sorting Errors
+
+**Invalid Sort Mode:**
+
+- Trigger: Sort mode state becomes corrupted or invalid
+- Response: Reset to 'none' sort mode, log error to console
+- State: Transactions displayed in original order
+- Recovery: Automatic - user can reselect sort mode
+
+### Theme Errors
+
+**Theme Preference Load Failure:**
+
+- Trigger: Corrupted theme data in Local Storage
+- Response: Default to light mode, log error to console
+- State: Light theme applied
+- Recovery: Automatic - user can toggle theme to set preference
 
 ### Storage Errors
 
@@ -437,13 +762,26 @@ The testing strategy employs a dual approach combining unit tests for specific s
 - Error message appears when amount is negative
 - Form clears after successful submission
 - Chart shows placeholder when no data exists
+- Adding a custom category updates dropdown
+- Deleting a custom category with transactions prompts for reassignment
+- Default categories cannot be deleted
+- Duplicate category names are rejected
+- Sorting by amount ascending produces correct order
+- Sorting by category produces alphabetical order
+- Adding transaction to sorted list maintains order
+- Theme toggle switches between dark and light mode
+- Theme preference persists across page reloads
+- Default theme is light when no preference exists
 
 **Coverage Goals:**
 
 - All error handling paths
 - Boundary conditions (empty, single item, many items)
 - Integration points between storage and UI
-- Category dropdown population
+- Category dropdown population with default and custom categories
+- Sort mode transitions and edge cases
+- Theme switching and persistence
+- Transaction reassignment logic when categories are deleted
 
 ### Property-Based Testing
 
@@ -476,6 +814,19 @@ Each correctness property from the design document must be implemented as a prop
 15. **Property 15 (Chart on addition):** Generate random transactions, verify chart reflects addition
 16. **Property 16 (Chart on deletion):** Generate random transactions, delete, verify chart reflects deletion
 17. **Property 17 (Startup loading):** Generate random transaction sets, store and reload, verify loading
+18. **Property 18 (Custom category addition):** Generate random valid category names, add, verify in dropdown
+19. **Property 19 (Custom category persistence):** Generate random custom categories, add and reload, verify persistence
+20. **Property 20 (Custom category deletion from storage):** Generate random custom categories, delete and reload, verify removal
+21. **Property 21 (Default category deletion prevention):** For each default category, attempt deletion, verify rejection
+22. **Property 22 (Duplicate category rejection):** Generate random existing category names, attempt duplicate creation, verify rejection
+23. **Property 23 (Transaction reassignment):** Generate random transactions with custom category, delete category, verify reassignment
+24. **Property 24 (Sort by amount ascending):** Generate random transaction lists, sort ascending, verify order
+25. **Property 25 (Sort by amount descending):** Generate random transaction lists, sort descending, verify order
+26. **Property 26 (Sort by category):** Generate random transaction lists, sort by category, verify alphabetical order
+27. **Property 27 (Sort order maintenance):** Generate random sorted lists, add transaction, verify order maintained
+28. **Property 28 (Sort indicator visibility):** For each sort mode, verify visual indicator present in rendered HTML
+29. **Property 29 (Theme application):** For each theme, activate it, verify CSS class applied to body
+30. **Property 30 (Theme persistence):** Generate random theme preferences, set and reload, verify persistence
 
 **Generators:**
 
@@ -483,12 +834,20 @@ Each correctness property from the design document must be implemented as a prop
 - Invalid amount generator (zero, negative, NaN, strings)
 - Empty field generator (empty strings, whitespace-only strings)
 - Transaction list generator (arrays of 0-100 transactions)
+- Valid category name generator (random non-empty strings)
+- Invalid category name generator (empty, whitespace-only, duplicates)
+- Custom category list generator (arrays of 0-20 custom categories)
+- Sort mode generator (all valid sort modes)
+- Theme generator (dark, light)
 
 ### Integration Testing
 
 **Manual Testing Scenarios:**
 
 - Complete user workflow: add multiple transactions, view chart, delete some, verify persistence
+- Custom category workflow: create categories, use in transactions, delete category with reassignment
+- Sorting workflow: add transactions, try all sort modes, add new transaction to sorted list
+- Theme workflow: toggle between dark and light mode, verify persistence across reload
 - Browser compatibility testing across Chrome, Firefox, Edge, Safari
 - Storage quota testing with large transaction lists
 - Offline functionality verification
@@ -509,10 +868,10 @@ tests/
 
 ### Testing Priorities
 
-1. **Critical Path:** Transaction CRUD operations and persistence
-2. **Data Integrity:** Balance and category calculations
-3. **User Experience:** Form validation and error handling
-4. **Edge Cases:** Empty states, storage failures, invalid inputs
+1. **Critical Path:** Transaction CRUD operations and persistence, custom category management
+2. **Data Integrity:** Balance and category calculations, transaction reassignment
+3. **User Experience:** Form validation, error handling, sort order maintenance, theme switching
+4. **Edge Cases:** Empty states, storage failures, invalid inputs, category deletion with transactions
 
 ---
 
@@ -532,20 +891,23 @@ tests/
 simple-web-app/
   index.html           # Main HTML file
   css/
-    styles.css         # All application styles
+    styles.css         # All application styles (including theme variables)
   js/
     app.js            # All application logic (modular sections)
 ```
 
 ### Development Approach
 
-1. **Phase 1:** HTML structure and CSS styling
+1. **Phase 1:** HTML structure and CSS styling (including theme CSS variables)
 2. **Phase 2:** Storage module and transaction model
 3. **Phase 3:** Form handling and validation
 4. **Phase 4:** Transaction list rendering and deletion
 5. **Phase 5:** Balance calculation and display
 6. **Phase 6:** Chart.js integration
-7. **Phase 7:** Testing and refinement
+7. **Phase 7:** Custom category management
+8. **Phase 8:** Transaction sorting functionality
+9. **Phase 9:** Dark/light mode toggle
+10. **Phase 10:** Testing and refinement
 
 ### Browser Compatibility Considerations
 
@@ -561,12 +923,15 @@ simple-web-app/
 - Use event delegation for delete buttons
 - Debounce chart updates if needed
 - Limit stored transactions to reasonable number (consider future pagination)
+- Cache sorted transaction arrays to avoid re-sorting on every render
+- Use CSS transitions for smooth theme switching
+- Optimize category dropdown updates (only re-render when categories change)
 
 ---
 
 ## Review Notes
 
-This design document provides a comprehensive technical specification for implementing the Expense & Budget Visualizer MVP. The architecture is intentionally simple, using vanilla JavaScript organized into logical modules within a single file as required. The design emphasizes immediate UI updates, automatic persistence, and graceful error handling.
+This design document provides a comprehensive technical specification for implementing the Expense & Budget Visualizer with enhanced features. The architecture is intentionally simple, using vanilla JavaScript organized into logical modules within a single file as required. The design emphasizes immediate UI updates, automatic persistence, and graceful error handling.
 
 Key design decisions:
 
@@ -575,5 +940,9 @@ Key design decisions:
 - Synchronous Local Storage operations (acceptable for MVP scale)
 - Chart.js for visualization (mature, well-documented library)
 - Progressive enhancement with error fallbacks
+- Custom category system with default category protection
+- Flexible sorting with maintained order on new additions
+- Theme system using CSS variables and body class toggling
+- Transaction reassignment workflow for category deletion
 
-The correctness properties provide a comprehensive testing foundation, ensuring all functional requirements are validated through both property-based and unit testing approaches.
+The correctness properties provide a comprehensive testing foundation, ensuring all functional requirements (including the three new features) are validated through both property-based and unit testing approaches. The design maintains simplicity while adding significant user customization capabilities.

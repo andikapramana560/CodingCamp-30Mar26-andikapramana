@@ -128,28 +128,161 @@ This plan implements a client-side expense tracker using vanilla JavaScript, HTM
     - Test chart rendering error handling
     - _Requirements: 5.5_
 
-- [ ] 8. Implement Application Initialization
-  - [ ] 8.1 Create init() function
+- [x] 8. Implement Custom Categories
+  - [x] 8.1 Create Category Module section
+    - Define DEFAULT_CATEGORIES constant array ["Food", "Transport", "Fun"]
+    - Implement loadCustomCategories() to read from Local Storage
+    - Implement saveCustomCategories() to write to Local Storage
+    - Implement getAllCategories() to return default + custom categories
+    - Implement isDefaultCategory() to check if category is default
+    - _Requirements: 9.1, 9.2, 9.3, 9.6_
+  - [x] 8.2 Implement custom category validation and management
+    - Implement validateCategoryName() to check non-empty and uniqueness
+    - Implement addCustomCategory() to add new custom category
+    - Implement deleteCustomCategory() to remove custom category
+    - Implement reassignTransactions() to handle category deletion
+    - Prevent deletion of default categories
+    - _Requirements: 9.4, 9.5, 9.6, 9.7, 9.8_
+  - [x] 8.3 Create category management UI
+    - Add category management section to HTML
+    - Implement renderCategoryManagement() to display all categories
+    - Implement handleAddCategory() for category creation
+    - Implement handleDeleteCategory() with reassignment prompt
+    - Update category dropdown with updateCategoryDropdown()
+    - _Requirements: 9.4, 9.5, 9.8_
+  - [ ]\* 8.4 Write property tests for custom categories
+    - **Property 18: Custom category addition**
+    - **Validates: Requirements 9.1, 9.3**
+    - **Property 19: Custom category persistence round-trip**
+    - **Validates: Requirements 9.2**
+    - **Property 20: Custom category deletion from storage**
+    - **Validates: Requirements 9.5**
+    - **Property 21: Default category deletion prevention**
+    - **Validates: Requirements 9.6**
+    - **Property 22: Duplicate category name rejection**
+    - **Validates: Requirements 9.7**
+    - **Property 23: Transaction reassignment on category deletion**
+    - **Validates: Requirements 9.8**
+  - [ ]\* 8.5 Write unit tests for category management
+    - Test adding valid custom category
+    - Test rejecting duplicate category names
+    - Test rejecting empty category names
+    - Test preventing default category deletion
+    - Test transaction reassignment workflow
+    - _Requirements: 9.6, 9.7, 9.8_
+
+- [ ] 9. Checkpoint - Ensure custom categories work correctly
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 10. Implement Transaction Sorting
+  - [x] 10.1 Create sorting functions in Transaction Module
+    - Define SORT_MODES constant object
+    - Implement sortByAmount() for ascending/descending sort
+    - Implement sortByCategory() for alphabetical sort
+    - Implement applySortOrder() to apply current sort mode
+    - Add currentSortMode state variable
+    - _Requirements: 10.2, 10.3, 10.4_
+  - [x] 10.2 Create sort control UI
+    - Add sort control dropdown to HTML
+    - Implement handleSortChange() to update sort mode
+    - Implement updateSortIndicator() to show current sort
+    - Update renderTransactions() to apply current sort
+    - _Requirements: 10.1, 10.5, 10.7_
+  - [x] 10.3 Maintain sort order on transaction operations
+    - Modify handleFormSubmit() to insert in sorted position
+    - Ensure new transactions maintain current sort order
+    - Update sort indicator after operations
+    - _Requirements: 10.6_
+  - [ ]\* 10.4 Write property tests for sorting
+    - **Property 24: Sort by amount ascending order**
+    - **Validates: Requirements 10.2**
+    - **Property 25: Sort by amount descending order**
+    - **Validates: Requirements 10.3**
+    - **Property 26: Sort by category alphabetical order**
+    - **Validates: Requirements 10.4**
+    - **Property 27: Sort order maintenance on addition**
+    - **Validates: Requirements 10.6**
+    - **Property 28: Sort indicator visibility**
+    - **Validates: Requirements 10.7**
+  - [ ]\* 10.5 Write unit tests for sorting
+    - Test sort by amount ascending with various amounts
+    - Test sort by amount descending with various amounts
+    - Test sort by category with mixed categories
+    - Test adding transaction to sorted list maintains order
+    - Test sort indicator updates correctly
+    - _Requirements: 10.2, 10.3, 10.4, 10.6, 10.7_
+
+- [ ] 11. Checkpoint - Ensure sorting works correctly
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 12. Implement Dark/Light Mode Toggle
+  - [x] 12.1 Create Theme Module section
+    - Define THEMES constant object {LIGHT: "light", DARK: "dark"}
+    - Implement loadThemePreference() to read from Local Storage
+    - Implement saveThemePreference() to write to Local Storage
+    - Implement getCurrentTheme() to return current theme
+    - Implement setTheme() to apply theme CSS class
+    - Add currentTheme state variable
+    - _Requirements: 11.4, 11.5, 11.6_
+  - [x] 12.2 Create CSS theme variables
+    - Define CSS variables for light theme colors
+    - Define CSS variables for dark theme colors
+    - Apply theme-specific styles using body class
+    - Ensure sufficient contrast for accessibility
+    - _Requirements: 11.2, 11.3, 11.7_
+  - [x] 12.3 Create theme toggle UI
+    - Add theme toggle button to HTML in prominent location
+    - Implement handleThemeToggle() to switch themes
+    - Implement applyTheme() to update UI elements
+    - Update chart colors with updateChartTheme()
+    - _Requirements: 11.1, 11.8_
+  - [x] 12.4 Initialize theme on startup
+    - Implement initializeTheme() to load saved preference
+    - Apply saved theme or default to light mode
+    - Call initializeTheme() during app initialization
+    - _Requirements: 11.5, 11.6_
+  - [ ]\* 12.5 Write property tests for theme switching
+    - **Property 29: Theme application**
+    - **Validates: Requirements 11.2, 11.3**
+    - **Property 30: Theme preference persistence round-trip**
+    - **Validates: Requirements 11.4, 11.5**
+  - [ ]\* 12.6 Write unit tests for theme functionality
+    - Test theme toggle switches between dark and light
+    - Test theme persistence across page reload
+    - Test default theme is light when no preference exists
+    - Test chart colors update with theme change
+    - _Requirements: 11.2, 11.3, 11.4, 11.5, 11.6_
+
+- [ ] 13. Checkpoint - Ensure theme toggle works correctly
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 14. Implement Application Initialization
+  - [ ] 14.1 Create init() function
     - Check Local Storage availability using isStorageAvailable()
     - Load transactions from Local Storage
-    - Initialize Chart.js instance
+    - Load custom categories from Local Storage
+    - Initialize theme with initializeTheme()
+    - Initialize Chart.js instance with theme colors
     - Render initial transaction list
     - Update initial balance display
     - Update initial chart
-    - Attach form submit event listener
+    - Render category management interface
+    - Attach all event listeners (form, sort, theme toggle)
     - Display error if Local Storage unavailable
-    - _Requirements: 6.1, 6.5_
-  - [ ]\* 8.2 Write property test for startup loading
+    - _Requirements: 6.1, 6.5, 9.2, 11.5_
+  - [ ]\* 14.2 Write property test for startup loading
     - **Property 17: Transaction loading on startup**
     - **Validates: Requirements 6.1**
-  - [ ]\* 8.3 Write unit tests for initialization
+  - [ ]\* 14.3 Write unit tests for initialization
     - Test initialization with empty storage
     - Test initialization with existing transactions
+    - Test initialization with existing custom categories
+    - Test initialization with saved theme preference
     - Test initialization with corrupted storage data
     - Test initialization with unavailable storage
-    - _Requirements: 6.1, 6.5_
+    - _Requirements: 6.1, 6.5, 9.2, 11.5_
 
-- [ ] 9. Final checkpoint and browser compatibility verification
+- [ ] 15. Final checkpoint and browser compatibility verification
   - Ensure all tests pass, ask the user if questions arise.
   - Verify application works in Chrome 90+, Firefox 88+, Edge 90+, Safari 14+
   - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
